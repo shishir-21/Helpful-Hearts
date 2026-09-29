@@ -136,7 +136,7 @@ Keep business logic out of route handlers and frontend code. Appointment service
 ## 6. Domain modules
 - Auth/Users: registration, login, identity, roles, patient profile.
 - Doctors: searchable profiles, qualifications, verification metadata.
-- Hospitals: clinic details and affiliations.
+- Doctor profiles: optional clinic/hospital name stored directly on each doctor profile; no separate hospital entity or management API.
 - Availability: recurring schedules, exceptions, and slot generation.
 - Appointments: booking, status transitions, cancellation, and rescheduling.
 - Reviews: source-attributed ratings and moderation.
@@ -237,7 +237,7 @@ Initial route groups:
 - /api/v1/auth
 - /api/v1/users
 - /api/v1/doctors
-- /api/v1/hospitals
+- /api/v1/admin/doctors (admin-managed doctor records)
 - /api/v1/availability
 - /api/v1/appointments
 - /api/v1/reviews
