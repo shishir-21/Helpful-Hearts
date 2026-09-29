@@ -227,8 +227,8 @@ Use commit messages that reflect the actual change delivered.
 | Phase | Status | Notes |
 |---|---|---|
 | 0. Product definition and repository foundation | Complete | Requirements, architecture, roadmap, and README committed. |
-| 1. Project skeleton and local infrastructure | In progress | Initial FastAPI/Next.js scaffold, Dockerfiles, Compose, and environment template committed; runtime verification pending. |
-| 2. Database and authentication | Not started | |
+| 1. Project skeleton and local infrastructure | Complete | Frontend opens locally and the Docker Compose stack builds and starts; PostgreSQL port was moved to 5436 in the local `.env` because 5432 and 5433 were occupied. |
+| 2. Database and authentication | In progress | Added SQLAlchemy user model, Alembic initial migration, Argon2 password hashing, JWT auth helpers, registration/login/current-user APIs, role dependency, basic auth UI, and auth tests. Runtime migration and test verification pending. |
 | 3. Doctor and hospital data foundation | Not started | |
 | 4. Doctor search and profile UI | Not started | |
 | 5. Doctor availability | Not started | |
