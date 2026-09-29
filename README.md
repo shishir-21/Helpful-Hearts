@@ -2,7 +2,7 @@
 
 Helpful Hearts is a doctor discovery, appointment booking, and AI-assisted health information platform. It is being developed incrementally as a modular FastAPI application with a Next.js frontend and a Docker-based local environment.
 
-> Project status: Phase 1 local runtime verified; Phase 2 authentication implementation is in progress. Product features are considered complete only after their exit checks pass.
+> Project status: Phases 1–2 locally verified; Phase 3 doctor and hospital data foundation implemented. Run the phase checks below before treating Phase 3 as verified.
 
 ## Product
 - **Find Doctors:** Search by name, specialty, and location; view profiles with qualifications, experience, affiliations, contact/booking information, and source-attributed ratings where available.
@@ -132,7 +132,7 @@ Work phase by phase. Keep each phase runnable, add tests alongside features, use
 - Keep development and production configuration separate.
 
 ## Data quality and trust
-Doctor profiles, credentials, affiliations, contact information, and ratings must have clear provenance and verification status. Demo data must be visibly labeled. Third-party data may only be used when its terms permit it.
+Doctor profiles, credentials, affiliations, contact information, and ratings must have clear provenance and verification status. The included seed data is explicitly fictional and marked as demo/unverified. Third-party data may only be used when its terms permit it.
 
 ## Medical safety and privacy
 Health and prescription features require clear uncertainty labels, data minimization, private file storage, access control, and documented retention/deletion rules. Before production use with real patient data, review applicable legal, privacy, and healthcare requirements for the launch jurisdiction.
