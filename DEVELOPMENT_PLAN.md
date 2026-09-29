@@ -60,9 +60,9 @@ Tasks:
 - Seed clearly labeled demo records.
 - Add admin-only management and verification endpoints.
 Exit criteria:
-- Authorized users can manage demo doctors/hospitals.
+- Authorized users can manage demo doctor records and credentials.
 - Demo/unverified records are not misrepresented as verified.
-- A doctor can have multiple clinic affiliations.
+- No separate hospital management section or API is exposed.
 
 ## Phase 4 — Doctor search and profile UI
 Deliverables: reference-inspired responsive search page, filters, result cards, profile page, search API.
