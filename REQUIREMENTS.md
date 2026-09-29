@@ -15,7 +15,7 @@ Core experiences:
 
 ## 2. Goals
 - Make doctor discovery easy and useful.
-- Display qualifications, experience, clinic affiliations, public contact details, and ratings with provenance and verification status.
+- Display qualifications, experience, an optional clinic/hospital name, public contact details, and ratings with provenance and verification status.
 - Support reliable booking with transactional protection against double booking.
 - Let patients and doctors manage appointments according to defined permissions.
 - Explain health and prescription information without replacing a licensed clinician.
@@ -78,8 +78,7 @@ Priority: P0 = initial usable release; P1 = next iteration; P2 = later.
 
 ### 5.4 Clinic / hospital name on doctor profiles
 - HOSP-001 (P0): Store name, address, city, contact details, and optional coordinates.
-- HOSP-002 (P0): A doctor may have multiple affiliations.
-- HOSP-003 (P0): Track affiliation status and validity dates to avoid presenting outdated workplaces as current.
+- CLINIC-001 (P0): Store an optional clinic/hospital name directly on the doctor profile. This is plain profile information, not a separate hospital record.
 - HOSP-004 (P1): Clinic detail pages and associated doctor lists.
 - HOSP-005 (P1): Verified clinic schedules and directions where available.
 
