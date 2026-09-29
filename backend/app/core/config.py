@@ -9,6 +9,8 @@ class Settings(BaseSettings):
     environment: str = "development"
     database_url: str = "postgresql+psycopg://helpful_hearts:helpful_hearts_dev_only@localhost:5432/helpful_hearts"
     frontend_origin: str = "http://localhost:3000"
+    secret_key: str = "local-development-only-change-me"
+    access_token_expire_minutes: int = 30
 
     model_config = SettingsConfigDict(
         env_file=".env",
