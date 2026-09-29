@@ -1,7 +1,7 @@
 import uuid
 from datetime import date, datetime
 
-from sqlalchemy import Date, DateTime, String, Text, Uuid, func
+from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, Uuid, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.session import Base
@@ -11,10 +11,10 @@ class DoctorCredential(Base):
     __tablename__ = "doctor_credentials"
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    doctor_id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), nullable=False, index=True)
+    doctor_id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), ForeignKey("doctors.id", ondelete="CASCADE"), nullable=False, index=True)
     degree: Mapped[str] = mapped_column(String(180), nullable=False)
     institution: Mapped[str | None] = mapped_column(String(180))
-    year_awarded: Mapped[int | None] = mapped_column(nullable=True)
+    year_awarded: Mapped[int | None] = mapped_column(Integer, nullable=True)
     verification_status: Mapped[str] = mapped_column(String(24), nullable=False, default="unverified")
     verification_note: Mapped[str | None] = mapped_column(Text)
     verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
