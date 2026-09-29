@@ -38,10 +38,10 @@ Browse and search public profiles; view booking instructions; register/sign in t
 Manage account; search doctors; view profiles and availability; book, view, cancel, or reschedule appointments; use the AI assistant; upload and review prescriptions; delete uploaded files subject to retention policy.
 
 ### Doctor
-Maintain a profile; submit qualifications and registration details for verification; manage clinic affiliations and public booking details; configure schedules and blocked dates; view and manage appointments only within their authorized scope.
+Maintain a profile; submit qualifications and registration details for verification; provide a clinic/hospital name as profile text and public booking details; configure schedules and blocked dates; view and manage appointments only within their authorized scope.
 
 ### Administrator
-Manage users, doctors, hospitals, affiliations, verification, reports, and moderation. Administrative actions must be permission-checked and audited.
+Manage users, doctors, verification, reports, and moderation. Administrative actions must be permission-checked and audited.
 
 ## 5. Functional requirements
 Priority: P0 = initial usable release; P1 = next iteration; P2 = later.
@@ -67,7 +67,7 @@ Priority: P0 = initial usable release; P1 = next iteration; P2 = later.
 
 ### 5.3 Doctor profiles and trust
 - PROFILE-001 (P0): Show name, specialty, qualifications/degrees, experience, languages, and biography when supplied.
-- PROFILE-002 (P0): Show current and historical clinic/hospital affiliations with status and dates where available.
+- PROFILE-002 (P0): Show a doctor’s optional clinic/hospital name as plain profile information when available; do not provide a separate hospital directory or affiliation management section.
 - PROFILE-003 (P0): Show registration information and verification status only when supported by evidence.
 - PROFILE-004 (P0): Show public phone, assistant/reception contact, email, address, and booking instructions only when authorized for publication.
 - PROFILE-005 (P0): Show data source and last-updated/verified date for material information.
@@ -76,7 +76,7 @@ Priority: P0 = initial usable release; P1 = next iteration; P2 = later.
 - PROFILE-008 (P1): Show ratings only when source access and reuse are permitted; include source, review count, and retrieval date.
 - PROFILE-009 (P0): Do not generate an AI reliability score. Show evidence fields separately; ratings are not proof of clinical outcomes.
 
-### 5.4 Hospitals and clinics
+### 5.4 Clinic / hospital name on doctor profiles
 - HOSP-001 (P0): Store name, address, city, contact details, and optional coordinates.
 - HOSP-002 (P0): A doctor may have multiple affiliations.
 - HOSP-003 (P0): Track affiliation status and validity dates to avoid presenting outdated workplaces as current.
