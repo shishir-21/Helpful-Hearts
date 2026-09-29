@@ -226,8 +226,8 @@ Use commit messages that reflect the actual change delivered.
 
 | Phase | Status | Notes |
 |---|---|---|
-| 0. Product definition and repository foundation | In progress | Documentation foundation |
-| 1. Project skeleton and local infrastructure | Not started | |
+| 0. Product definition and repository foundation | Complete | Requirements, architecture, roadmap, and README committed. |
+| 1. Project skeleton and local infrastructure | In progress | Initial FastAPI/Next.js scaffold, Dockerfiles, Compose, and environment template committed; runtime verification pending. |
 | 2. Database and authentication | Not started | |
 | 3. Doctor and hospital data foundation | Not started | |
 | 4. Doctor search and profile UI | Not started | |
