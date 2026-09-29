@@ -2,7 +2,7 @@
 
 Helpful Hearts is a doctor discovery, appointment booking, and AI-assisted health information platform. It is being developed incrementally as a modular FastAPI application with a Next.js frontend and a Docker-based local environment.
 
-> Project status: Phase 1 scaffold committed. Local runtime verification is pending. Product features are planned, not implemented, until delivered and tested.
+> Project status: Phase 1 local runtime verified; Phase 2 authentication implementation is in progress. Product features are considered complete only after their exit checks pass.
 
 ## Product
 - **Find Doctors:** Search by name, specialty, and location; view profiles with qualifications, experience, affiliations, contact/booking information, and source-attributed ratings where available.
@@ -20,7 +20,7 @@ AI features are informational. They are not a diagnosis or a substitute for a li
 | Backend | Python 3.12, FastAPI, Uvicorn |
 | Database | PostgreSQL 16 |
 | ORM | SQLAlchemy 2.x |
-| Migrations | Alembic (to be added in the database phase) |
+| Migrations | Alembic |
 | Validation / settings | Pydantic, pydantic-settings |
 | Containers | Docker, Docker Compose |
 | Testing | Pytest, HTTPX |
@@ -80,7 +80,7 @@ From the repository root:
    - Database readiness: http://localhost:8000/api/v1/health/ready
    - Interactive API docs: http://localhost:8000/docs
 
-4. Stop the stack:
+4. Apply database migrations (in another terminal while the stack is running):\n\n   ```powershell\n   docker compose exec backend alembic upgrade head\n   ```\n\n5. Stop the stack:
 
    ```powershell
    docker compose down
