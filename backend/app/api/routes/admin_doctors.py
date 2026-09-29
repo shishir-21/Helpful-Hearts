@@ -9,17 +9,8 @@ from sqlalchemy.orm import Session, selectinload
 from app.api.deps import get_db, require_roles
 from app.models.doctor import Doctor
 from app.models.doctor_credential import DoctorCredential
-from app.models.doctor_hospital_affiliation import DoctorHospitalAffiliation
-from app.models.hospital import Hospital
 from app.models.user import User
-from app.schemas.doctors import (
-    AffiliationCreate,
-    CredentialCreate,
-    DoctorAdminResponse,
-    DoctorCreate,
-    HospitalCreate,
-    HospitalResponse,
-)
+from app.schemas.doctors import CredentialCreate, DoctorAdminResponse, DoctorCreate
 
 router = APIRouter(prefix="/admin", tags=["Admin - Doctor Data"])
 
@@ -27,29 +18,12 @@ router = APIRouter(prefix="/admin", tags=["Admin - Doctor Data"])
 def _doctor_or_404(db: Session, doctor_id: UUID) -> Doctor:
     doctor = db.scalar(
         select(Doctor)
-        .options(
-            selectinload(Doctor.credentials),
-            selectinload(Doctor.affiliations).selectinload(DoctorHospitalAffiliation.hospital),
-        )
+        .options(selectinload(Doctor.credentials))
         .where(Doctor.id == doctor_id)
     )
     if doctor is None:
         raise HTTPException(status_code=404, detail="Doctor not found")
     return doctor
-
-
-@router.post("/hospitals", response_model=HospitalResponse, status_code=status.HTTP_201_CREATED)
-def create_hospital(payload: HospitalCreate, _admin: User = Depends(require_roles("admin")), db: Session = Depends(get_db)):
-    hospital = Hospital(**payload.model_dump())
-    db.add(hospital)
-    db.commit()
-    db.refresh(hospital)
-    return hospital
-
-
-@router.get("/hospitals", response_model=list[HospitalResponse])
-def list_hospitals(_admin: User = Depends(require_roles("admin")), db: Session = Depends(get_db)):
-    return list(db.scalars(select(Hospital).order_by(Hospital.name)).all())
 
 
 @router.post("/doctors", response_model=DoctorAdminResponse, status_code=status.HTTP_201_CREATED)
@@ -64,10 +38,7 @@ def create_doctor(payload: DoctorCreate, _admin: User = Depends(require_roles("a
 def list_doctors(_admin: User = Depends(require_roles("admin")), db: Session = Depends(get_db)):
     doctors = db.scalars(
         select(Doctor)
-        .options(
-            selectinload(Doctor.credentials),
-            selectinload(Doctor.affiliations).selectinload(DoctorHospitalAffiliation.hospital),
-        )
+        .options(selectinload(Doctor.credentials))
         .order_by(Doctor.full_name)
     ).all()
     return list(doctors)
@@ -83,22 +54,6 @@ def add_credential(
     if db.get(Doctor, doctor_id) is None:
         raise HTTPException(status_code=404, detail="Doctor not found")
     db.add(DoctorCredential(doctor_id=doctor_id, **payload.model_dump()))
-    db.commit()
-    return _doctor_or_404(db, doctor_id)
-
-
-@router.post("/doctors/{doctor_id}/affiliations", response_model=DoctorAdminResponse, status_code=status.HTTP_201_CREATED)
-def add_affiliation(
-    doctor_id: UUID,
-    payload: AffiliationCreate,
-    _admin: User = Depends(require_roles("admin")),
-    db: Session = Depends(get_db),
-):
-    if db.get(Doctor, doctor_id) is None:
-        raise HTTPException(status_code=404, detail="Doctor not found")
-    if db.get(Hospital, payload.hospital_id) is None:
-        raise HTTPException(status_code=404, detail="Hospital not found")
-    db.add(DoctorHospitalAffiliation(doctor_id=doctor_id, **payload.model_dump()))
     db.commit()
     return _doctor_or_404(db, doctor_id)
 
