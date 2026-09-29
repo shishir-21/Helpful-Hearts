@@ -228,8 +228,8 @@ Use commit messages that reflect the actual change delivered.
 |---|---|---|
 | 0. Product definition and repository foundation | Complete | Requirements, architecture, roadmap, and README committed. |
 | 1. Project skeleton and local infrastructure | Complete | Frontend opens locally and the Docker Compose stack builds and starts; PostgreSQL port was moved to 5436 in the local `.env` because 5432 and 5433 were occupied. |
-| 2. Database and authentication | In progress | Added SQLAlchemy user model, Alembic initial migration, Argon2 password hashing, JWT auth helpers, registration/login/current-user APIs, role dependency, basic auth UI, and auth tests. Runtime migration and test verification pending. |
-| 3. Doctor and hospital data foundation | Not started | |
+| 2. Database and authentication | Complete | Registration/login flow is working locally. Authentication tests and migrations are included; rerun them after pulling if the local database was recreated. |
+| 3. Doctor and hospital data foundation | In progress | Added doctor, credential, hospital, and multi-affiliation models; admin CRUD/list and verification endpoints; fictional demo seed command; migration and tests. Runtime migration and test verification pending. |
 | 4. Doctor search and profile UI | Not started | |
 | 5. Doctor availability | Not started | |
 | 6. Appointment booking core | Not started | |
