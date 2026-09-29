@@ -51,11 +51,11 @@ Exit criteria:
 - User can register/login; protected routes reject unauthenticated requests.
 - Role restrictions tested; migrations work from an empty DB.
 
-## Phase 3 — Doctor and hospital data foundation
-Deliverables: doctor, credential, hospital, affiliation models; admin-managed demo data; initial API contracts.
+## Phase 3 — Doctor profile data foundation
+Deliverables: doctor and credential models; optional clinic/hospital name on doctor profile; admin-managed demo data; initial API contracts.
 Tasks:
 - Define public/private profile fields.
-- Model multiple affiliations and effective dates.
+- Store an optional clinic/hospital name directly on the doctor profile.
 - Define verification states.
 - Seed clearly labeled demo records.
 - Add admin-only management and verification endpoints.
@@ -69,7 +69,7 @@ Deliverables: reference-inspired responsive search page, filters, result cards, 
 Tasks:
 - Build navigation, search, category chips, doctor cards, profile components.
 - Add paginated name/specialty/location search and indexes.
-- Display experience, affiliations, source, and verification state.
+- Display experience, optional clinic/hospital name, source, and verification state.
 - Add map only for valid coordinates and keep an accessible list.
 - Use demo data until real sources are approved.
 Exit criteria:
@@ -211,7 +211,7 @@ Exit criteria:
 - chore: scaffold frontend and backend
 - chore: add Docker Compose development environment
 - feat(auth): add registration and login
-- feat(doctors): add doctor and hospital models
+- feat(doctors): add doctor profile and credential models
 - feat(doctors): add search and profile APIs
 - feat(availability): add doctor schedule management
 - feat(appointments): add transactional booking
@@ -229,7 +229,7 @@ Use commit messages that reflect the actual change delivered.
 | 0. Product definition and repository foundation | Complete | Requirements, architecture, roadmap, and README committed. |
 | 1. Project skeleton and local infrastructure | Complete | Frontend opens locally and the Docker Compose stack builds and starts; PostgreSQL port was moved to 5436 in the local `.env` because 5432 and 5433 were occupied. |
 | 2. Database and authentication | Complete | Registration/login flow is working locally. Authentication tests and migrations are included; rerun them after pulling if the local database was recreated. |
-| 3. Doctor and hospital data foundation | In progress | Added doctor, credential, hospital, and multi-affiliation models; admin CRUD/list and verification endpoints; fictional demo seed command; migration and tests. Runtime migration and test verification pending. |
+| 3. Doctor profile data foundation | In progress | Doctor and credential models remain; hospital management tables/APIs were removed. Optional hospital name is stored directly on the doctor profile. Migration 0003 removes the separate hospital tables; runtime migration and tests pending. |
 | 4. Doctor search and profile UI | Not started | |
 | 5. Doctor availability | Not started | |
 | 6. Appointment booking core | Not started | |
