@@ -27,7 +27,7 @@ Backend: Python + FastAPI | Database: PostgreSQL | Containers: Docker Compose
        |          |           |                |
        v          v           v                v
     Auth/Users  Doctors/   Appointments     AI/Prescription
-                Hospitals   & Availability   Services
+                Doctor Profiles & Availability
        |          |           |                |
        +----------+-----------+----------------+
                   |
@@ -96,7 +96,7 @@ The first release is a modular monolith: one FastAPI application and one Postgre
     │   │   │   ├── auth/
     │   │   │   ├── users/
     │   │   │   ├── doctors/
-    │   │   │   ├── hospitals/
+    │   │   │   ├── doctors/
     │   │   │   ├── availability/
     │   │   │   ├── appointments/
     │   │   │   ├── reviews/
@@ -208,8 +208,7 @@ Core entities:
 - PatientProfile
 - DoctorProfile
 - DoctorCredential / VerificationRecord
-- Hospital
-- DoctorHospitalAffiliation (status, dates, source)
+- Doctor (optional hospital_name field)
 - DoctorAvailabilityRule
 - AvailabilityException
 - Appointment (patient, doctor, clinic, start/end, status, type, reference)
