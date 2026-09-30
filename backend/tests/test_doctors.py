@@ -96,3 +96,50 @@ def test_hospital_management_routes_are_not_exposed(client):
     app.dependency_overrides[get_current_user] = lambda: _user("admin")
     assert client.get("/api/v1/admin/hospitals").status_code == 404
     assert client.post("/api/v1/admin/hospitals", json={}).status_code == 404
+
+
+def test_public_search_and_profile_only_return_verified_doctors(client):
+    app.dependency_overrides[get_current_user] = lambda: _user("admin")
+    response = client.post(
+        "/api/v1/admin/doctors",
+        json={
+            "full_name": "Dr. Verified Example",
+            "specialty": "Cardiology",
+            "hospital_name": "Example Clinic",
+            "profile_status": "verified",
+            "is_demo": True,
+            "source_name": "Fictional test data",
+        },
+    )
+    assert response.status_code == 201
+    doctor_id = response.json()["id"]
+
+    public_list = client.get("/api/v1/doctors?q=Verified&specialty=Cardiology&page=1&page_size=5")
+    assert public_list.status_code == 200
+    payload = public_list.json()
+    assert payload["total"] == 1
+    assert payload["items"][0]["id"] == doctor_id
+
+    public_profile = client.get(f"/api/v1/doctors/{doctor_id}")
+    assert public_profile.status_code == 200
+    assert public_profile.json()["full_name"] == "Dr. Verified Example"
+    assert "registration_number" not in public_profile.json()
+    assert "verification_note" not in public_profile.json()
+
+
+def test_public_search_hides_draft_profiles(client):
+    app.dependency_overrides[get_current_user] = lambda: _user("admin")
+    response = client.post(
+        "/api/v1/admin/doctors",
+        json={
+            "full_name": "Dr. Draft Example",
+            "specialty": "General Medicine",
+            "profile_status": "draft",
+            "is_demo": True,
+            "source_name": "Fictional test data",
+        },
+    )
+    assert response.status_code == 201
+    doctor_id = response.json()["id"]
+    assert client.get(f"/api/v1/doctors/{doctor_id}").status_code == 404
+    assert client.get("/api/v1/doctors?q=Draft").json()["total"] == 0
