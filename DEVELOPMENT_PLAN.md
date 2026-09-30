@@ -231,8 +231,8 @@ Use commit messages that reflect the actual change delivered.
 | 2. Database and authentication | Complete | Registration/login flow is working locally. Authentication tests and migrations are included; rerun them after pulling if the local database was recreated. |
 | 3. Doctor profile data foundation | Complete | Doctor and credential models, optional hospital name on doctor profile, admin management and verification endpoints, fictional demo seed, and migration 0003 are implemented. User confirmed the database migration and test suite passed locally. |
 | 4. Doctor search and profile UI | In progress | Added public paginated search and verified-profile detail APIs, responsive directory and profile pages, filters, loading/empty/error states, and public API tests. Local build and tests pending. |
-| 5. Doctor availability | In progress | Added recurring weekly availability rules, admin create/list/delete APIs, and a public future-slot endpoint. Date exceptions, overlap validation, and local verification remain. |
-| 6. Appointment booking core | Not started | |
+| 5. Doctor availability | Complete | Recurring weekly rules, timezone-aware future-slot generation, admin create/list/delete APIs, migration 0004, and local migration/test verification are complete. Date exceptions, overlap validation, and schedule UI remain future enhancements. |
+| 6. Appointment booking core | In progress | Added appointment model/migration, authenticated patient booking API, schedule revalidation, database uniqueness protection, booking references, and patient-owned appointment retrieval. Frontend slot selection/confirmation, idempotency, audit events, and concurrency tests remain. |
 | 7. Appointment management | Not started | |
 | 8. Ratings, reviews, and trust | Not started | |
 | 9. AI Health Assistant | Not started | |
