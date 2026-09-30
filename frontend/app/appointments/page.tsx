@@ -134,7 +134,8 @@ export default function AppointmentsPage() {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!response.ok) throw new Error("Unable to load appointment history.");
-      setHistoryById(previous => ({ ...previous, [appointmentId]: await response.json() as History[] }));
+      const events = await response.json() as History[];
+      setHistoryById(previous => ({ ...previous, [appointmentId]: events }));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Unable to load history.");
     }
