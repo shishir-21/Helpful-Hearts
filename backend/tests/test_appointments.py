@@ -242,7 +242,12 @@ def test_patient_can_reschedule_before_12_hour_cutoff(client):
         json={"starts_at": new_start.isoformat()},
     )
     assert response.status_code == 200
-    assert datetime.fromisoformat(response.json()["starts_at"].replace("Z", "+00:00")) == new_start.astimezone(timezone.utc)
+    returned_start = datetime.fromisoformat(response.json()["starts_at"].replace("Z", "+00:00"))
+    # SQLite drops timezone metadata for DateTime(timezone=True); the API value
+    # is still stored as UTC, so restore UTC before comparing instants.
+    if returned_start.tzinfo is None:
+        returned_start = returned_start.replace(tzinfo=timezone.utc)
+    assert returned_start.astimezone(timezone.utc) == new_start.astimezone(timezone.utc)
 
     history = client.get(f"/api/v1/appointments/{appointment_id}/history")
     assert history.status_code == 200
