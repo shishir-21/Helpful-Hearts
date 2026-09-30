@@ -46,14 +46,6 @@ class CredentialResponse(CredentialCreate):
     created_at: datetime
 
 
-class DoctorAdminResponse(DoctorCreate):
-    model_config = ConfigDict(from_attributes=True)
-    id: UUID
-    credentials: list[PublicCredentialResponse]
-    created_at: datetime
-    updated_at: datetime
-
-
 class PublicCredentialResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: UUID
@@ -64,6 +56,14 @@ class PublicCredentialResponse(BaseModel):
     verified_at: datetime | None
     source_name: str
     source_url: str | None
+
+
+class DoctorAdminResponse(DoctorCreate):
+    model_config = ConfigDict(from_attributes=True)
+    id: UUID
+    credentials: list[PublicCredentialResponse]
+    created_at: datetime
+    updated_at: datetime
 
 
 class DoctorPublicResponse(BaseModel):
