@@ -61,7 +61,7 @@ class PublicCredentialResponse(BaseModel):
 class DoctorAdminResponse(DoctorCreate):
     model_config = ConfigDict(from_attributes=True)
     id: UUID
-    credentials: list[PublicCredentialResponse]
+    credentials: list[CredentialResponse]
     created_at: datetime
     updated_at: datetime
 
@@ -83,4 +83,4 @@ class DoctorPublicResponse(BaseModel):
     source_name: str
     source_url: str | None
     updated_at: datetime
-    credentials: list[CredentialResponse]
+    credentials: list[PublicCredentialResponse]
