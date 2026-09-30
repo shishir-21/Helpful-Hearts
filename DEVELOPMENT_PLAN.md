@@ -229,7 +229,7 @@ Use commit messages that reflect the actual change delivered.
 | 0. Product definition and repository foundation | Complete | Requirements, architecture, roadmap, and README committed. |
 | 1. Project skeleton and local infrastructure | Complete | Frontend opens locally and the Docker Compose stack builds and starts; PostgreSQL port was moved to 5436 in the local `.env` because 5432 and 5433 were occupied. |
 | 2. Database and authentication | Complete | Registration/login flow is working locally. Authentication tests and migrations are included; rerun them after pulling if the local database was recreated. |
-| 3. Doctor profile data foundation | In progress | Doctor and credential models remain; hospital management tables/APIs were removed. Optional hospital name is stored directly on the doctor profile. Migration 0003 removes the separate hospital tables; runtime migration and tests pending. |
+| 3. Doctor profile data foundation | Complete | Doctor and credential models, optional hospital name on doctor profile, admin management and verification endpoints, fictional demo seed, and migration 0003 are implemented. User confirmed the database migration and test suite passed locally. |
 | 4. Doctor search and profile UI | Not started | |
 | 5. Doctor availability | Not started | |
 | 6. Appointment booking core | Not started | |
