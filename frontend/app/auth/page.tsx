@@ -28,6 +28,7 @@ export default function AuthPage() {
     event.preventDefault();
     setMessage("");
     setLoading(true);
+    const normalizedEmail = email.trim().toLowerCase();
 
     try {
       const response = await fetch(`${API_URL}/auth/${mode}`, {
@@ -35,14 +36,20 @@ export default function AuthPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(
           mode === "register"
-            ? { full_name: fullName, email, password }
-            : { email, password },
+            ? { full_name: fullName.trim(), email: normalizedEmail, password }
+            : { email: normalizedEmail, password },
         ),
       });
       const data = (await response.json()) as AuthResponse | { detail?: string };
 
       if (!response.ok) {
-        setMessage("detail" in data ? data.detail ?? "Something went wrong." : "Something went wrong.");
+        setMessage(
+          response.status === 401
+            ? "Invalid email or password. Use the exact password you entered when creating your account."
+            : "detail" in data
+              ? data.detail ?? "Something went wrong."
+              : "Something went wrong.",
+        );
         return;
       }
 
