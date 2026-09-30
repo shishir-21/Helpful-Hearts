@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.api.routes.auth import router as auth_router
+from app.api.routes.doctors import router as doctors_router
 from app.api.routes.admin_doctors import router as admin_doctors_router
 from app.core.config import settings
 from app.db.session import check_database_connection
@@ -22,6 +23,7 @@ app.add_middleware(
 )
 
 app.include_router(auth_router, prefix="/api/v1")
+app.include_router(doctors_router, prefix="/api/v1")
 app.include_router(admin_doctors_router, prefix="/api/v1")
 
 
