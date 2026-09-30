@@ -1,4 +1,4 @@
-from datetime import date, time, timedelta, timezone
+from datetime import date, datetime, time, timedelta, timezone
 from uuid import uuid4
 
 import pytest
@@ -23,7 +23,7 @@ def client():
         connect_args={"check_same_thread": False},
         poolclass=StaticPool,
     )
-    testing_session = sessionmaker(bind=engine, autoflush=False, autocommit=False)
+    testing_session = sessionmaker(bind=engine, autoflush=False, autocommit=False, expire_on_commit=False)
     Base.metadata.create_all(bind=engine)
 
     def override_get_db():
