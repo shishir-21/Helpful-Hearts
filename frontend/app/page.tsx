@@ -2,7 +2,7 @@ import Link from "next/link";
 
 const journeys = [
   { number: "01", title: "Find Doctors", description: "Explore doctor information and public profiles. External doctor discovery will be added once a reliable source is configured.", href: "/find-doctors", action: "Explore doctors", tone: "blue" },
-  { number: "02", title: "Book Your Slot", description: "Browse doctors who have registered on Helpful Hearts. Appointment booking will become available as schedules are implemented.", href: "/doctors", action: "View registered doctors", tone: "green" },
+  { number: "02", title: "Book Your Slot", description: "Browse doctors who have registered on Helpful Hearts. Book an appointment with a registered doctor. A clearly labeled fictional demo profile is available for local testing.", href: "/book-slot", action: "Book a demo slot", tone: "green" },
 ];
 
 export default function HomePage() {
@@ -10,7 +10,7 @@ export default function HomePage() {
     <main className="min-h-screen">
       <header className="site-header"><div className="container header-inner">
         <Link href="/" className="brand"><span className="brand-mark">♥</span> Helpful Hearts</Link>
-        <nav className="header-nav"><Link href="/find-doctors">Find Doctors</Link><Link href="/doctors">Book Your Slot</Link><Link href="/auth">Login / Register</Link></nav>
+        <nav className="header-nav"><Link href="/find-doctors">Find Doctors</Link><Link href="/book-slot">Book Your Slot</Link><Link href="/auth">Login / Register</Link></nav>
       </div></header>
       <section className="home-hero"><div className="container">
         <p className="eyebrow">CARE STARTS WITH CLARITY</p>

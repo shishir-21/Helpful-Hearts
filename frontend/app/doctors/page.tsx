@@ -57,7 +57,7 @@ export default function DoctorsPage() {
       <section className="search-hero"><div className="container">
         <p className="eyebrow">YOUR HEALTH, YOUR CHOICE</p>
         <h1>Find care that feels right.</h1>
-        <p className="hero-copy">Browse verified doctors registered on Helpful Hearts. Appointment booking will be enabled after doctor availability and booking are implemented.</p>
+        <p className="hero-copy">Browse verified doctors registered on Helpful Hearts. Select a registered doctor to view available slots and book an appointment.</p>
         <div className="search-panel">
           <label className="search-field"><span>Doctor or specialty</span><input value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} placeholder="e.g. Dr. Sharma, cardiology" /></label>
           <label className="search-field"><span>Specialty</span><select value={specialty} onChange={(e) => { setSpecialty(e.target.value); setPage(1); }}><option value="">All specialties</option>{specialties.map((s) => <option key={s}>{s}</option>)}</select></label>
@@ -77,7 +77,7 @@ export default function DoctorsPage() {
             <div className="doctor-meta">{doctor.years_experience !== null && <span>◷ {doctor.years_experience} years experience</span>}{doctor.hospital_name && <span>⌖ {doctor.hospital_name}</span>}</div>
             {doctor.credentials.length > 0 && <p className="degree-line">{doctor.credentials.map((c) => c.degree).join(" · ")}</p>}
             {doctor.is_demo && <span className="demo-label">Demo profile</span>}
-            <Link className="card-link" href={`/doctors/${doctor.id}`}>View profile <span>→</span></Link>
+            <Link className="card-link" href={`/book-slot?doctor=${doctor.id}`}>View slots & book <span>→</span></Link>
           </article>)}</div>
           {data.pages > 1 && <div className="pagination"><button className="secondary-button" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Previous</button><span>Page {data.page} of {data.pages}</span><button className="secondary-button" disabled={page >= data.pages} onClick={() => setPage((p) => p + 1)}>Next</button></div>}
         </>}
