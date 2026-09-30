@@ -81,3 +81,19 @@ a { text-decoration: none; }
 .site-footer span { padding: 0 5px; }
 @media (max-width: 850px) { .search-panel { grid-template-columns: 1fr 1fr; } .search-button { align-self: stretch; } .doctor-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 600px) { .container { width: min(100% - 32px, 1120px); } .site-header { height: 66px; } .brand { font-size: 18px; } .header-nav { gap: 14px; font-size: 12px; } .search-hero { padding: 48px 0; } .search-hero h1 { letter-spacing: -1.2px; } .hero-copy { font-size: 14px; } .search-panel { grid-template-columns: 1fr; gap: 10px; padding: 12px; } .search-field { padding: 8px; border-bottom: 1px solid #edf0f4; } .doctor-grid { grid-template-columns: 1fr; } .results-heading h2 { font-size: 22px; } .profile-layout { grid-template-columns: 1fr; } .profile-main, .profile-sidebar { padding: 20px; } .profile-heading h1 { font-size: 22px; } .pagination { gap: 10px; } }
+
+.home-hero { padding: 64px 0 82px; background: linear-gradient(120deg, #edf7ff 0%, #f4f7ff 55%, #effaf8 100%); }
+.home-hero h1 { max-width: 760px; margin: 0; color: #18324c; font-size: clamp(36px, 5.5vw, 58px); line-height: 1.08; letter-spacing: -2px; }
+.home-hero > .container > .hero-copy { margin-bottom: 34px; }
+.journey-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.journey-card { display: flex; min-height: 250px; flex-direction: column; padding: 26px; border: 1px solid #e2eaf2; border-radius: 18px; background: #fff; box-shadow: 0 12px 35px #17324c0c; }
+.journey-number { color: #1473c9; font-size: 11px; font-weight: 800; letter-spacing: 1.5px; }
+.journey-card h2 { margin: 18px 0 8px; color: #1c3045; font-size: 23px; }
+.journey-card p { margin: 0 0 24px; color: #657589; font-size: 13px; line-height: 1.7; }
+.journey-link { display: flex; align-items: center; justify-content: space-between; margin-top: auto; padding-top: 12px; color: #1473c9; font-size: 13px; font-weight: 800; }
+.journey-green .journey-number, .journey-green .journey-link { color: #24845b; }
+.discovery-notice { max-width: 760px; align-items: flex-start; margin-top: 30px; border-style: solid; text-align: left; }
+.discovery-notice h2 { margin: 6px 0 0; color: #24384c; font-size: 20px; }
+.discovery-notice p { max-width: 650px; margin: 0; }
+.discovery-notice .primary-button { margin-top: 8px; }
+@media (max-width: 600px) { .journey-grid { grid-template-columns: 1fr; } .home-hero { padding: 48px 0; } .home-hero h1 { letter-spacing: -1.2px; } }

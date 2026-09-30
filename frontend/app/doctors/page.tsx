@@ -52,12 +52,12 @@ export default function DoctorsPage() {
     <main className="min-h-screen">
       <header className="site-header"><div className="container header-inner">
         <Link href="/" className="brand"><span className="brand-mark">♥</span> Helpful Hearts</Link>
-        <nav className="header-nav"><Link className="nav-active" href="/doctors">Find a doctor</Link><Link href="/auth">Login / Register</Link></nav>
+        <nav className="header-nav"><Link href="/find-doctors">Find Doctors</Link><Link className="nav-active" href="/doctors">Book Your Slot</Link><Link href="/auth">Login / Register</Link></nav>
       </div></header>
       <section className="search-hero"><div className="container">
         <p className="eyebrow">YOUR HEALTH, YOUR CHOICE</p>
         <h1>Find care that feels right.</h1>
-        <p className="hero-copy">Explore doctor profiles and the information you need to make an informed choice.</p>
+        <p className="hero-copy">Browse verified doctors registered on Helpful Hearts. Appointment booking will be enabled after doctor availability and booking are implemented.</p>
         <div className="search-panel">
           <label className="search-field"><span>Doctor or specialty</span><input value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} placeholder="e.g. Dr. Sharma, cardiology" /></label>
           <label className="search-field"><span>Specialty</span><select value={specialty} onChange={(e) => { setSpecialty(e.target.value); setPage(1); }}><option value="">All specialties</option>{specialties.map((s) => <option key={s}>{s}</option>)}</select></label>
@@ -66,10 +66,10 @@ export default function DoctorsPage() {
         </div>
       </div></section>
       <section className="container results-section">
-        <div className="results-heading"><div><p className="eyebrow">DOCTOR DIRECTORY</p><h2>Available profiles</h2></div>{!loading && !error && <span className="result-count">{data?.total ?? 0} profiles</span>}</div>
+        <div className="results-heading"><div><p className="eyebrow">BOOK YOUR SLOT</p><h2>Registered doctors</h2></div>{!loading && !error && <span className="result-count">{data?.total ?? 0} profiles</span>}</div>
         {loading && <div className="state-card" role="status"><span className="spinner" /> Loading doctor profiles…</div>}
         {error && <div className="state-card error-state" role="alert"><h3>Something went wrong</h3><p>{error}</p><button className="secondary-button" onClick={() => setPage((p) => p)}>Try again</button></div>}
-        {!loading && !error && data?.items.length === 0 && <div className="state-card empty-state"><div className="empty-icon">⌕</div><h3>No verified profiles found</h3><p>Try another name or specialty. Only verified profiles appear in the public directory.</p><button className="secondary-button" onClick={() => { setQ(""); setSpecialty(""); setLocation(""); setPage(1); }}>Clear filters</button></div>}
+        {!loading && !error && data?.items.length === 0 && <div className="state-card empty-state"><div className="empty-icon">⌕</div><h3>No verified profiles found</h3><p>Try another name or specialty. Only verified profiles appear here. External doctor discovery is separate.</p><button className="secondary-button" onClick={() => { setQ(""); setSpecialty(""); setLocation(""); setPage(1); }}>Clear filters</button></div>}
         {!loading && !error && !!data?.items.length && <>
           <div className="doctor-grid">{data.items.map((doctor) => <article className="doctor-card" key={doctor.id}>
             <div className="doctor-card-top"><div className="doctor-avatar">{doctor.full_name.replace(/^Dr\.?\s*/i, "").split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase()}</div><span className="verified-badge">✓ Verified profile</span></div>
