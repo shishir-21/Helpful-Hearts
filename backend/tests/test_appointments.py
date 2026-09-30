@@ -160,3 +160,90 @@ def test_patient_only_sees_own_appointments(client):
     response = client.get(f"/api/v1/appointments/{appointment.id}")
     assert response.status_code == 200
     assert response.json()["id"] == str(appointment.id)
+
+
+def test_patient_can_cancel_at_least_12_hours_before_and_history_is_recorded(client):
+    patient = User(id=uuid4(), email=f"{uuid4()}@example.com", full_name="Cancel Patient", password_hash="unused")
+    doctor = Doctor(id=uuid4(), full_name="Dr. Cancel Example", specialty="General Medicine", profile_status="verified", is_demo=True, source_name="Fictional test data")
+    starts = datetime.now(timezone.utc) + timedelta(days=7)
+    appointment = Appointment(
+        id=uuid4(), doctor_id=doctor.id, patient_id=patient.id,
+        starts_at=starts, ends_at=starts + timedelta(minutes=30),
+        status="confirmed", booking_reference=f"HH-{uuid4().hex[:12].upper()}",
+    )
+    db = next(app.dependency_overrides[get_db]())
+    db.add_all([patient, doctor, appointment])
+    db.commit()
+    appointment_id = appointment.id
+    db.close()
+    app.dependency_overrides[get_current_user] = lambda: patient
+
+    response = client.post(f"/api/v1/appointments/{appointment_id}/cancel", json={"reason": "Plans changed"})
+    assert response.status_code == 200
+    assert response.json()["status"] == "cancelled"
+
+    history = client.get(f"/api/v1/appointments/{appointment_id}/history")
+    assert history.status_code == 200
+    assert [event["event"] for event in history.json()] == ["cancelled"]
+    assert history.json()[0]["note"] == "Plans changed"
+
+
+def test_patient_cannot_cancel_within_12_hours(client):
+    patient = User(id=uuid4(), email=f"{uuid4()}@example.com", full_name="Late Cancel Patient", password_hash="unused")
+    doctor = Doctor(id=uuid4(), full_name="Dr. Late Cancel", specialty="General Medicine", profile_status="verified", is_demo=True, source_name="Fictional test data")
+    starts = datetime.now(timezone.utc) + timedelta(hours=6)
+    appointment = Appointment(
+        id=uuid4(), doctor_id=doctor.id, patient_id=patient.id,
+        starts_at=starts, ends_at=starts + timedelta(minutes=30),
+        status="confirmed", booking_reference=f"HH-{uuid4().hex[:12].upper()}",
+    )
+    db = next(app.dependency_overrides[get_db]())
+    db.add_all([patient, doctor, appointment])
+    db.commit()
+    appointment_id = appointment.id
+    db.close()
+    app.dependency_overrides[get_current_user] = lambda: patient
+
+    response = client.post(f"/api/v1/appointments/{appointment_id}/cancel", json={"reason": "Too late"})
+    assert response.status_code == 409
+    assert "12 hours" in response.json()["detail"]
+
+
+def test_patient_can_reschedule_before_12_hour_cutoff(client):
+    from zoneinfo import ZoneInfo
+
+    patient = User(id=uuid4(), email=f"{uuid4()}@example.com", full_name="Reschedule Patient", password_hash="unused")
+    doctor = Doctor(id=uuid4(), full_name="Dr. Reschedule Example", specialty="General Medicine", profile_status="verified", is_demo=True, source_name="Fictional test data")
+    today = date.today()
+    days_until_monday = (7 - today.weekday()) % 7 or 7
+    first_monday = today + timedelta(days=days_until_monday)
+    second_monday = first_monday + timedelta(days=7)
+    old_start = datetime.combine(first_monday, time(9, 0), tzinfo=ZoneInfo("Asia/Kolkata"))
+    new_start = datetime.combine(second_monday, time(9, 0), tzinfo=ZoneInfo("Asia/Kolkata"))
+    appointment = Appointment(
+        id=uuid4(), doctor_id=doctor.id, patient_id=patient.id,
+        starts_at=old_start.astimezone(timezone.utc),
+        ends_at=(old_start + timedelta(minutes=30)).astimezone(timezone.utc),
+        status="confirmed", booking_reference=f"HH-{uuid4().hex[:12].upper()}",
+    )
+    db = next(app.dependency_overrides[get_db]())
+    db.add_all([patient, doctor, appointment])
+    db.add(DoctorAvailability(
+        doctor_id=doctor.id, weekday=0, start_time=time(9, 0), end_time=time(12, 0),
+        slot_minutes=30, timezone="Asia/Kolkata", is_active=True,
+    ))
+    db.commit()
+    appointment_id = appointment.id
+    db.close()
+    app.dependency_overrides[get_current_user] = lambda: patient
+
+    response = client.post(
+        f"/api/v1/appointments/{appointment_id}/reschedule",
+        json={"starts_at": new_start.isoformat()},
+    )
+    assert response.status_code == 200
+    assert datetime.fromisoformat(response.json()["starts_at"].replace("Z", "+00:00")) == new_start.astimezone(timezone.utc)
+
+    history = client.get(f"/api/v1/appointments/{appointment_id}/history")
+    assert history.status_code == 200
+    assert history.json()[0]["event"] == "rescheduled"
