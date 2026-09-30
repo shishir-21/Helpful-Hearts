@@ -139,3 +139,14 @@ Health and prescription features require clear uncertainty labels, data minimiza
 
 ## License
 To be decided before public release.
+
+
+## Local demo booking
+
+To create or refresh the clearly fictional, bookable demo doctor and its Monday 09:00–12:00 (Asia/Kolkata) schedule, run:
+
+```powershell
+docker compose exec backend python -m app.seed_demo
+```
+
+Open `/book-slot`, register or log in as a patient, select **Dr. Asha Example (Demo)**, choose a future slot, and confirm. The demo profile and qualifications are fictional and must not be used for real medical care. View your bookings at `/appointments`.
