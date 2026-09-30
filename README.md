@@ -2,7 +2,7 @@
 
 Helpful Hearts is a doctor discovery, appointment booking, and AI-assisted health information platform. It is being developed incrementally as a modular FastAPI application with a Next.js frontend and a Docker-based local environment.
 
-> Project status: Phases 1–2 locally verified; Phase 3 doctor profile data foundation implemented. Run the phase checks below before treating Phase 3 as verified.
+ > Project status: Phases 1–3 locally verified. Phase 4 (doctor search and profile UI) is next.
 
 ## Product
 - **Find Doctors:** Search by name, specialty, and location; view profiles with qualifications, experience, optional clinic/hospital name, contact/booking information, and source-attributed ratings where available.
@@ -113,10 +113,10 @@ npm run dev
 When running the backend outside Compose, set `DATABASE_URL` to a local database address (for example, host `localhost`) and configure `FRONTEND_ORIGIN` as needed. The frontend API base URL is `NEXT_PUBLIC_API_URL`.
 
 ## Current scaffold behavior
-- The frontend displays a simple project landing page.
-- FastAPI exposes `/`, `/health`, and `/api/v1/health/ready`.
+- The frontend includes the project landing page and basic authentication UI.
+- FastAPI exposes health endpoints, authentication routes, and admin-only doctor/credential management and verification routes.
 - The readiness endpoint checks the PostgreSQL connection.
-- Doctor search, authentication, booking, AI, and prescription features are not implemented yet.
+- Doctor search/profile UI, booking, AI, and prescription features are not implemented yet.
 
 ## Project documentation
 - [Product requirements](REQUIREMENTS.md) — roles, features, safety, privacy, acceptance criteria, and open decisions.
