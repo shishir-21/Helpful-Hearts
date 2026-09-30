@@ -1,0 +1,162 @@
+from datetime import date, time, timedelta, timezone
+from uuid import uuid4
+
+import pytest
+from fastapi.testclient import TestClient
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
+
+from app.api.deps import get_current_user, get_db
+from app.db.session import Base
+from app.main import app
+from app.models.appointment import Appointment
+from app.models.doctor import Doctor
+from app.models.doctor_availability import DoctorAvailability
+from app.models.user import User
+
+
+@pytest.fixture()
+def client():
+    engine = create_engine(
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    testing_session = sessionmaker(bind=engine, autoflush=False, autocommit=False)
+    Base.metadata.create_all(bind=engine)
+
+    def override_get_db():
+        db = testing_session()
+        try:
+            yield db
+        finally:
+            db.close()
+
+    app.dependency_overrides[get_db] = override_get_db
+    with TestClient(app) as test_client:
+        yield test_client
+    app.dependency_overrides.clear()
+    Base.metadata.drop_all(bind=engine)
+    engine.dispose()
+
+
+def test_book_available_slot_and_block_duplicate(client):
+    patient = User(id=uuid4(), email=f"{uuid4()}@example.com", full_name="Test Patient", password_hash="unused")
+    doctor = Doctor(
+        id=uuid4(),
+        full_name="Dr. Booking Example",
+        specialty="General Medicine",
+        profile_status="verified",
+        is_demo=True,
+        source_name="Fictional test data",
+    )
+    db = next(app.dependency_overrides[get_db]())
+    db.add_all([patient, doctor])
+    db.commit()
+
+    # Find the next Monday more than a day in the future at 10:00 Asia/Kolkata.
+    import datetime as dt
+    today = dt.date.today()
+    monday = today + dt.timedelta(days=(7 - today.weekday()) % 7 or 7)
+    from zoneinfo import ZoneInfo
+    slot = dt.datetime.combine(monday, dt.time(10, 0), tzinfo=ZoneInfo("Asia/Kolkata"))
+    db.add(
+        DoctorAvailability(
+            doctor_id=doctor.id,
+            weekday=0,
+            start_time=time(9, 0),
+            end_time=time(12, 0),
+            slot_minutes=30,
+            timezone="Asia/Kolkata",
+            is_active=True,
+        )
+    )
+    db.commit()
+    db.close()
+
+    app.dependency_overrides[get_current_user] = lambda: patient
+
+    first = client.post(
+        "/api/v1/appointments",
+        json={"doctor_id": str(doctor.id), "starts_at": slot.isoformat(), "reason": "Routine consultation"},
+    )
+    assert first.status_code == 201
+    assert first.json()["status"] == "confirmed"
+    assert first.json()["booking_reference"].startswith("HH-")
+
+    second = client.post(
+        "/api/v1/appointments",
+        json={"doctor_id": str(doctor.id), "starts_at": slot.isoformat()},
+    )
+    assert second.status_code == 409
+
+
+def test_booking_rejects_outside_schedule(client):
+    patient = User(id=uuid4(), email=f"{uuid4()}@example.com", full_name="Test Patient", password_hash="unused")
+    doctor = Doctor(
+        id=uuid4(),
+        full_name="Dr. Schedule Example",
+        specialty="Cardiology",
+        profile_status="verified",
+        is_demo=True,
+        source_name="Fictional test data",
+    )
+    db = next(app.dependency_overrides[get_db]())
+    db.add_all([patient, doctor])
+    db.add(
+        DoctorAvailability(
+            doctor_id=doctor.id,
+            weekday=date.today().weekday(),
+            start_time=time(9, 0),
+            end_time=time(12, 0),
+            slot_minutes=30,
+            timezone="Asia/Kolkata",
+            is_active=True,
+        )
+    )
+    db.commit()
+    db.close()
+    app.dependency_overrides[get_current_user] = lambda: patient
+
+    future = datetime.combine(date.today() + timedelta(days=1), time(20, 0), tzinfo=timezone.utc)
+    response = client.post(
+        "/api/v1/appointments",
+        json={"doctor_id": str(doctor.id), "starts_at": future.isoformat()},
+    )
+    assert response.status_code == 409
+
+
+def test_patient_only_sees_own_appointments(client):
+    first = User(id=uuid4(), email=f"{uuid4()}@example.com", full_name="First Patient", password_hash="unused")
+    second = User(id=uuid4(), email=f"{uuid4()}@example.com", full_name="Second Patient", password_hash="unused")
+    doctor = Doctor(
+        id=uuid4(),
+        full_name="Dr. Ownership Example",
+        specialty="Dermatology",
+        profile_status="verified",
+        is_demo=True,
+        source_name="Fictional test data",
+    )
+    starts = datetime.now(timezone.utc) + timedelta(days=7)
+    appointment = Appointment(
+        id=uuid4(),
+        doctor_id=doctor.id,
+        patient_id=first.id,
+        starts_at=starts,
+        ends_at=starts + timedelta(minutes=30),
+        status="confirmed",
+        booking_reference=f"HH-{uuid4().hex[:12].upper()}",
+    )
+    db = next(app.dependency_overrides[get_db]())
+    db.add_all([first, second, doctor, appointment])
+    db.commit()
+    db.close()
+
+    app.dependency_overrides[get_current_user] = lambda: second
+    assert client.get(f"/api/v1/appointments/{appointment.id}").status_code == 404
+
+    app.dependency_overrides[get_current_user] = lambda: first
+    response = client.get(f"/api/v1/appointments/{appointment.id}")
+    assert response.status_code == 200
+    assert response.json()["id"] == str(appointment.id)
