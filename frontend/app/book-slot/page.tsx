@@ -24,7 +24,7 @@ export default function BookSlotPage() {
   useEffect(() => {
     setToken(sessionStorage.getItem("helpful_hearts_access_token") || "");
     const requestedDoctor = new URLSearchParams(window.location.search).get("doctor") || "";
-    fetch(`${API}/doctors?page=1&page_size=100`)
+    fetch(`${API}/doctors?page=1&page_size=50`)
       .then(async r => { if (!r.ok) throw new Error("Could not load registered doctors."); return r.json() as Promise<DoctorResults>; })
       .then(data => { setDoctors(data.items); setDoctorId(data.items.some(d => d.id === requestedDoctor) ? requestedDoctor : data.items[0]?.id || ""); })
       .catch(e => setError(e.message)).finally(() => setLoading(false));
