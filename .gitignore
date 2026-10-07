@@ -30,3 +30,5 @@ Thumbs.db
 # Local uploads and generated data
 backend/storage/
 uploads/
+
+next-env.d.ts
