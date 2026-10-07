@@ -82,9 +82,3 @@ def test_provider_failure_returns_service_unavailable(client, monkeypatch: pytes
         json={"content": "Hello"},
     )
     assert response.status_code == 503
-
-
-def test_assistant_rejects_non_patient_roles(client):
-    from app.db.session import SessionLocal
-
-    assert SessionLocal is not None
