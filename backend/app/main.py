@@ -7,6 +7,7 @@ from app.api.routes.doctors import router as doctors_router
 from app.api.routes.admin_doctors import router as admin_doctors_router
 from app.api.routes.availability import router as availability_router
 from app.api.routes.appointments import router as appointments_router
+from app.api.routes.assistant import router as assistant_router
 from app.core.config import settings
 from app.db.session import check_database_connection
 
@@ -29,6 +30,7 @@ app.include_router(doctors_router, prefix="/api/v1")
 app.include_router(admin_doctors_router, prefix="/api/v1")
 app.include_router(availability_router, prefix="/api/v1")
 app.include_router(appointments_router, prefix="/api/v1")
+app.include_router(assistant_router, prefix="/api/v1")
 
 
 @app.get("/", tags=["Root"])
