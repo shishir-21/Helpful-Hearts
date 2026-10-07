@@ -110,3 +110,22 @@ def test_role_dependency_rejects_patient():
     test_app.dependency_overrides[get_current_user] = lambda: patient
     response = TestClient(test_app).get("/admin")
     assert response.status_code == 403
+
+
+def test_login_succeeds_after_registration(client):
+    password = "strong-pass-123"
+    registered = client.post(
+        "/api/v1/auth/register",
+        json={"email": "Patient@example.com", "full_name": "Test Patient", "password": password},
+    )
+    assert registered.status_code == 201
+
+    login = client.post(
+        "/api/v1/auth/login",
+        json={"email": "  PATIENT@example.com  ", "password": password},
+    )
+    assert login.status_code == 200
+    payload = login.json()
+    assert payload["user"]["email"] == "patient@example.com"
+    assert payload["user"]["id"] == registered.json()["user"]["id"]
+    assert payload["access_token"]

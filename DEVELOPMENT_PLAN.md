@@ -21,7 +21,7 @@ Tasks:
 - Confirm product scope, user roles, MVP, and non-goals.
 - Record launch-jurisdiction and compliance questions.
 - Define doctor data provenance and verification states.
-- Record booking policy decisions to resolve before implementation.
+- Record booking policy decisions to resolve before implementation. Patient cancellation and rescheduling require at least 12 hours' notice.
 - Commit the documentation foundation.
 Exit criteria:
 - Documentation committed; no secrets in repository.
@@ -232,8 +232,8 @@ Use commit messages that reflect the actual change delivered.
 | 3. Doctor profile data foundation | Complete | Doctor and credential models, optional hospital name on doctor profile, admin management and verification endpoints, fictional demo seed, and migration 0003 are implemented. User confirmed the database migration and test suite passed locally. |
 | 4. Doctor search and profile UI | In progress | Added public paginated search and verified-profile detail APIs, responsive directory and profile pages, filters, loading/empty/error states, and public API tests. Local build and tests pending. |
 | 5. Doctor availability | Complete | Recurring weekly rules, timezone-aware future-slot generation, admin create/list/delete APIs, migration 0004, and local migration/test verification are complete. Date exceptions, overlap validation, and schedule UI remain future enhancements. |
-| 6. Appointment booking core | In progress | Added appointment model/migration, authenticated patient booking API, schedule revalidation, database uniqueness protection, booking references, and patient-owned appointment retrieval. Frontend slot selection/confirmation, idempotency, audit events, and concurrency tests remain. |
-| 7. Appointment management | Not started | |
+| 6. Appointment booking core | In progress | Added appointment model/migration, authenticated patient booking API, schedule revalidation, database uniqueness protection, booking references, and patient-owned appointment retrieval. Added frontend slot selection and confirmation; idempotency, audit events, and concurrency tests remain. |
+| 7. Appointment management | In progress | Added patient appointment list, cancellation and rescheduling endpoints with a 12-hour cutoff, and appointment status history. Added patient dashboard controls and API tests. Doctor dashboard/actions and local verification remain. |
 | 8. Ratings, reviews, and trust | Not started | |
 | 9. AI Health Assistant | Not started | |
 | 10. Prescription upload and OCR | Not started | |
