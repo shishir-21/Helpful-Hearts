@@ -91,8 +91,10 @@ async def create_message(
     history = db.scalars(
         select(AssistantMessage)
         .where(AssistantMessage.conversation_id == conversation.id)
-        .order_by(AssistantMessage.created_at.asc())
+        .order_by(AssistantMessage.created_at.desc())
+        .limit(20)
     ).all()
+    history.reverse()
     provider_messages = [{"role": "system", "content": SYSTEM_PROMPT}]
     provider_messages.extend({"role": item.role, "content": item.content} for item in history)
 
@@ -104,6 +106,7 @@ async def create_message(
 
     assistant_message = AssistantMessage(conversation_id=conversation.id, role="assistant", content=response_text)
     db.add(assistant_message)
+    conversation.updated_at = __import__("datetime").datetime.now(__import__("datetime").timezone.utc)
     db.commit()
     db.refresh(assistant_message)
     return MessageResponse.model_validate(assistant_message)
