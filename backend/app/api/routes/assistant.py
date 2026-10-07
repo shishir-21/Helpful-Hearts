@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -106,7 +107,7 @@ async def create_message(
 
     assistant_message = AssistantMessage(conversation_id=conversation.id, role="assistant", content=response_text)
     db.add(assistant_message)
-    conversation.updated_at = __import__("datetime").datetime.now(__import__("datetime").timezone.utc)
+    conversation.updated_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(assistant_message)
     return MessageResponse.model_validate(assistant_message)
