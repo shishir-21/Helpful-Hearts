@@ -11,6 +11,10 @@ class Settings(BaseSettings):
     frontend_origin: str = "http://localhost:3000"
     secret_key: str = "local-development-only-change-me"
     access_token_expire_minutes: int = 30
+    ai_api_key: str = ""
+    ai_model: str = ""
+    ai_base_url: str = ""
+    ai_timeout_seconds: float = 15.0
 
     model_config = SettingsConfigDict(
         env_file=".env",
