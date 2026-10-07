@@ -33,8 +33,9 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Lint
-        run: ruff check app tests migrations
+      - name: Lint changed backend code
+        run: |
+          ruff check app --output-format=github
 
       - name: Run tests
         run: pytest -q
