@@ -1,3 +1,4 @@
+from typing import TYPE_CHECKING
 import uuid
 from datetime import datetime
 
@@ -5,6 +6,9 @@ from sqlalchemy import Boolean, DateTime, Integer, String, Text, Uuid, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.session import Base
+
+if TYPE_CHECKING:
+    from app.models.doctor_credential import DoctorCredential
 
 
 class Doctor(Base):
