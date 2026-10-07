@@ -4,5 +4,6 @@ from app.models.doctor_availability import DoctorAvailability
 from app.models.appointment import Appointment
 from app.models.appointment_status_history import AppointmentStatusHistory
 from app.models.user import User
+from app.models.assistant import AssistantConversation, AssistantMessage
 
-__all__ = ["User", "Doctor", "DoctorCredential", "DoctorAvailability", "Appointment", "AppointmentStatusHistory"]
+__all__ = ["User", "Doctor", "DoctorCredential", "DoctorAvailability", "Appointment", "AppointmentStatusHistory", "AssistantConversation", "AssistantMessage"]
