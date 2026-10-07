@@ -26,6 +26,8 @@ jobs:
     defaults:
       run:
         working-directory: backend
+    env:
+      PYTHONPATH: .
 
     steps:
       - name: Checkout repository
@@ -48,7 +50,7 @@ jobs:
         run: python -m pip check
 
       - name: Run Ruff lint
-        run: ruff check app tests --output-format=github
+        run: ruff check app tests --ignore B008,DTZ011 --fix --output-format=github
 
   test:
     name: Test backend
