@@ -13,6 +13,12 @@ from app.services.assistant import AssistantProviderError, SYSTEM_PROMPT, get_as
 router = APIRouter(prefix="/assistant", tags=["Health Assistant"])
 
 
+def _require_patient(current_user: User) -> User:
+    if current_user.role != "patient":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only patients can use the health assistant")
+    return current_user
+
+
 def _get_owned_conversation(db: Session, conversation_id: UUID, patient_id: UUID) -> AssistantConversation:
     conversation = db.scalar(
         select(AssistantConversation).where(
@@ -31,6 +37,7 @@ def create_conversation(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> ConversationResponse:
+    _require_patient(current_user)
     conversation = AssistantConversation(patient_id=current_user.id, title=payload.title.strip() or "Health Assistant")
     db.add(conversation)
     db.commit()
@@ -43,6 +50,7 @@ def list_conversations(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> list[ConversationResponse]:
+    _require_patient(current_user)
     conversations = db.scalars(
         select(AssistantConversation)
         .where(AssistantConversation.patient_id == current_user.id)
@@ -57,6 +65,7 @@ def list_messages(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> list[MessageResponse]:
+    _require_patient(current_user)
     _get_owned_conversation(db, conversation_id, current_user.id)
     messages = db.scalars(
         select(AssistantMessage)
@@ -73,6 +82,7 @@ async def create_message(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> MessageResponse:
+    _require_patient(current_user)
     conversation = _get_owned_conversation(db, conversation_id, current_user.id)
     user_message = AssistantMessage(conversation_id=conversation.id, role="user", content=payload.content.strip())
     db.add(user_message)
