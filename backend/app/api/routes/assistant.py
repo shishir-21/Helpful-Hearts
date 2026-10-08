@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, get_db, require_roles
+from app.core.rate_limit import assistant_rate_limiter
 from app.models.assistant import Conversation
 from app.models.user import User
 from app.schemas.assistant import (
@@ -49,6 +50,7 @@ def list_messages(
     current_user: User = Depends(patient_only),
     db: Session = Depends(get_db),
 ):
+    assistant_rate_limiter.check(current_user.id)
     service = AssistantService(db)
     conversation = service.get_conversation(current_user, conversation_id)
     if conversation is None:
