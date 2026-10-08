@@ -82,3 +82,50 @@ def test_provider_failure_returns_service_unavailable(client, monkeypatch: pytes
         json={"content": "Hello"},
     )
     assert response.status_code == 503
+
+
+def test_emergency_message_returns_safety_response_without_provider_call(client, monkeypatch: pytest.MonkeyPatch):
+    auth = _register(client, "safety@example.com")
+    headers = {"Authorization": f"Bearer {auth['access_token']}"}
+    conversation = client.post("/api/v1/assistant/conversations", headers=headers, json={}).json()
+
+    def fail(self, messages):
+        raise AssertionError("provider must not be called for an emergency message")
+
+    monkeypatch.setattr(OpenAIProvider, "generate", fail)
+    response = client.post(
+        f"/api/v1/assistant/conversations/{conversation['id']}/messages",
+        headers=headers,
+        json={"content": "I have severe chest pain and trouble breathing"},
+    )
+    assert response.status_code == 200
+    assert "emergency medical care" in response.json()["content"]
+
+
+def test_assistant_rate_limit_returns_429(client, monkeypatch: pytest.MonkeyPatch):
+    from app.core.config import settings
+    from app.core.rate_limit import assistant_rate_limiter
+
+    monkeypatch.setattr(settings, "assistant_rate_limit_requests", 1)
+    monkeypatch.setattr(settings, "assistant_rate_limit_window_seconds", 60)
+    assistant_rate_limiter._requests.clear()
+
+    auth = _register(client, "rate-limit@example.com")
+    headers = {"Authorization": f"Bearer {auth['access_token']}"}
+    conversation = client.post("/api/v1/assistant/conversations", headers=headers, json={}).json()
+    monkeypatch.setattr(OpenAIProvider, "generate", lambda self, messages: "Okay.")
+
+    first = client.post(
+        f"/api/v1/assistant/conversations/{conversation['id']}/messages",
+        headers=headers,
+        json={"content": "Hello"},
+    )
+    second = client.post(
+        f"/api/v1/assistant/conversations/{conversation['id']}/messages",
+        headers=headers,
+        json={"content": "Another question"},
+    )
+    assert first.status_code == 200
+    assert second.status_code == 429
+    assert second.headers["Retry-After"]
+    assistant_rate_limiter._requests.clear()
