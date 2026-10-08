@@ -97,7 +97,7 @@ def test_book_available_slot_and_block_duplicate(client):
 
 
 def test_idempotency_key_returns_same_appointment(client):
-    _, doctor = _create_doctor_and_patient(client, "Dr. Idempotency Example")
+    patient, doctor = _create_doctor_and_patient(client, "Dr. Idempotency Example")
     booking_day = date.today() + timedelta(days=(7 - date.today().weekday()) % 7 or 7)
     slot = datetime.combine(booking_day, time(10, 0), tzinfo=timezone.utc)
 
