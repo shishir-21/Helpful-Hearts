@@ -82,7 +82,9 @@ def test_provider_failure_returns_service_unavailable(client, monkeypatch: pytes
         json={"content": "Hello"},
     )
     assert response.status_code == 503
-\n\ndef test_emergency_message_returns_safety_response_without_provider_call(client, monkeypatch: pytest.MonkeyPatch):
+
+
+def test_emergency_message_returns_safety_response_without_provider_call(client, monkeypatch: pytest.MonkeyPatch):
     auth = _register(client, "safety@example.com")
     headers = {"Authorization": f"Bearer {auth['access_token']}"}
     conversation = client.post("/api/v1/assistant/conversations", headers=headers, json={}).json()
