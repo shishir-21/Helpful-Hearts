@@ -11,16 +11,8 @@ from app.main import app
 
 @pytest.fixture()
 def client():
-    engine = create_engine(
-        "sqlite://",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
-    TestingSessionLocal = sessionmaker(
-        bind=engine,
-        autoflush=False,
-        autocommit=False,
-    )
+    engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
+    TestingSessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
     Base.metadata.create_all(bind=engine)
 
     def override_get_db():
@@ -33,7 +25,20 @@ def client():
     app.dependency_overrides[get_db] = override_get_db
     with TestClient(app) as test_client:
         yield test_client
-
     app.dependency_overrides.clear()
     Base.metadata.drop_all(bind=engine)
     engine.dispose()
+
+
+@pytest.fixture()
+def db_session(client):
+    override = app.dependency_overrides[get_db]
+    generator = override()
+    db = next(generator)
+    try:
+        yield db
+    finally:
+        try:
+            next(generator)
+        except StopIteration:
+            pass
