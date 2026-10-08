@@ -28,6 +28,10 @@ class DoctorCreate(BaseModel):
     source_url: str | None = Field(default=None, max_length=500)
 
 
+class DoctorUserLinkRequest(BaseModel):
+    user_id: UUID
+
+
 class CredentialCreate(BaseModel):
     degree: str = Field(min_length=2, max_length=180)
     institution: str | None = Field(default=None, max_length=180)
@@ -61,6 +65,7 @@ class PublicCredentialResponse(BaseModel):
 class DoctorAdminResponse(DoctorCreate):
     model_config = ConfigDict(from_attributes=True)
     id: UUID
+    user_id: UUID | None
     credentials: list[CredentialResponse]
     created_at: datetime
     updated_at: datetime

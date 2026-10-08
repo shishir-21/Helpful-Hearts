@@ -6,9 +6,10 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from app.api.deps import get_current_user, get_db
+from app.api.deps import get_current_doctor, get_current_user, get_db, require_roles
 from app.db.session import Base
 from app.main import app
+from app.models.doctor import Doctor
 from app.models.user import User
 
 
@@ -31,6 +32,7 @@ def client():
 
     app.dependency_overrides[get_db] = override_get_db
     with TestClient(app) as test_client:
+        test_client.testing_session = testing_session
         yield test_client
     app.dependency_overrides.clear()
     Base.metadata.drop_all(bind=engine)
@@ -143,3 +145,120 @@ def test_public_search_hides_draft_profiles(client):
     doctor_id = response.json()["id"]
     assert client.get(f"/api/v1/doctors/{doctor_id}").status_code == 404
     assert client.get("/api/v1/doctors?q=Draft").json()["total"] == 0
+
+
+def test_admin_can_link_doctor_profile_to_doctor_user(client):
+    app.dependency_overrides[get_current_user] = lambda: _user("admin")
+    doctor_response = client.post(
+        "/api/v1/admin/doctors",
+        json={
+            "full_name": "Dr. Linked Example",
+            "specialty": "Cardiology",
+            "is_demo": True,
+            "source_name": "Fictional test data",
+        },
+    )
+    assert doctor_response.status_code == 201
+    doctor_id = doctor_response.json()["id"]
+
+    doctor_user = _user("doctor")
+    db = client.testing_session()
+    db.add(doctor_user)
+    db.commit()
+
+    response = client.patch(
+        f"/api/v1/admin/doctors/{doctor_id}/user-link",
+        json={"user_id": str(doctor_user.id)},
+    )
+    assert response.status_code == 200
+    assert response.json()["user_id"] == str(doctor_user.id)
+
+    duplicate_doctor = client.post(
+        "/api/v1/admin/doctors",
+        json={
+            "full_name": "Dr. Duplicate Link",
+            "specialty": "Dermatology",
+            "is_demo": True,
+            "source_name": "Fictional test data",
+        },
+    )
+    assert duplicate_doctor.status_code == 201
+
+    duplicate_response = client.patch(
+        f"/api/v1/admin/doctors/{duplicate_doctor.json()['id']}/user-link",
+        json={"user_id": str(doctor_user.id)},
+    )
+    assert duplicate_response.status_code == 409
+
+
+def test_admin_cannot_link_non_doctor_user(client):
+    app.dependency_overrides[get_current_user] = lambda: _user("admin")
+    doctor_response = client.post(
+        "/api/v1/admin/doctors",
+        json={
+            "full_name": "Dr. Link Validation",
+            "specialty": "Neurology",
+            "is_demo": True,
+            "source_name": "Fictional test data",
+        },
+    )
+    assert doctor_response.status_code == 201
+
+    patient = _user("patient")
+    db = client.testing_session()
+    db.add(patient)
+    db.commit()
+
+    response = client.patch(
+        f"/api/v1/admin/doctors/{doctor_response.json()['id']}/user-link",
+        json={"user_id": str(patient.id)},
+    )
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Linked user must have the doctor role"
+
+
+def test_doctor_identity_resolves_only_its_linked_profile(client):
+    doctor_user = _user("doctor")
+    other_doctor_user = _user("doctor")
+    db = client.testing_session()
+    db.add_all([doctor_user, other_doctor_user])
+    db.flush()
+
+    own_doctor = Doctor(
+        user_id=doctor_user.id,
+        full_name="Dr. Own Profile",
+        specialty="Cardiology",
+        source_name="Fictional test data",
+    )
+    other_doctor = Doctor(
+        user_id=other_doctor_user.id,
+        full_name="Dr. Other Profile",
+        specialty="Neurology",
+        source_name="Fictional test data",
+    )
+    db.add_all([own_doctor, other_doctor])
+    db.commit()
+
+    resolved = get_current_doctor(current_user=doctor_user, db=db)
+    assert resolved.id == own_doctor.id
+    assert resolved.id != other_doctor.id
+
+
+def test_doctor_role_guard_rejects_patient():
+    patient = _user("patient")
+    doctor_only = require_roles("doctor")
+    with pytest.raises(Exception) as exc_info:
+        doctor_only(patient)
+    assert exc_info.value.status_code == 403
+
+
+def test_doctor_without_profile_link_gets_not_found(client):
+    doctor_user = _user("doctor")
+    db = client.testing_session()
+    db.add(doctor_user)
+    db.commit()
+
+    with pytest.raises(Exception) as exc_info:
+        get_current_doctor(current_user=doctor_user, db=db)
+    assert exc_info.value.status_code == 404
+    assert exc_info.value.detail == "Doctor profile not linked"
