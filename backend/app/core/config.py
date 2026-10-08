@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     openai_model: str = "gpt-5"
     openai_max_output_tokens: int = 800
     ai_timeout_seconds: float = 30.0
+    assistant_rate_limit_requests: int = 10
+    assistant_rate_limit_window_seconds: int = 60
     s3_bucket: str | None = None
     s3_region: str | None = None
     s3_endpoint_url: str | None = None
