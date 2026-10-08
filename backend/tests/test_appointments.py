@@ -60,7 +60,7 @@ def _create_doctor_and_patient(client, doctor_name: str):
 
 
 def test_book_available_slot_and_block_duplicate(client):
-    patient, doctor = _create_doctor_and_patient(client, "Dr. Booking Example")
+    _, doctor = _create_doctor_and_patient(client, "Dr. Booking Example")
     today = date.today()
     monday = today + timedelta(days=(7 - today.weekday()) % 7 or 7)
     from zoneinfo import ZoneInfo
@@ -97,7 +97,7 @@ def test_book_available_slot_and_block_duplicate(client):
 
 
 def test_idempotency_key_returns_same_appointment(client):
-    patient, doctor = _create_doctor_and_patient(client, "Dr. Idempotency Example")
+    _, doctor = _create_doctor_and_patient(client, "Dr. Idempotency Example")
     booking_day = date.today() + timedelta(days=(7 - date.today().weekday()) % 7 or 7)
     slot = datetime.combine(booking_day, time(10, 0), tzinfo=timezone.utc)
 
