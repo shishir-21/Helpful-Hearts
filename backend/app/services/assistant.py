@@ -8,6 +8,7 @@ from app.integrations.ai.openai_provider import OpenAIProvider
 from app.integrations.ai.provider import AssistantInput, ProviderError
 from app.models.assistant import Conversation, Message
 from app.models.user import User
+from app.services.assistant_safety import evaluate_message
 
 MAX_HISTORY_MESSAGES = 20
 
@@ -62,18 +63,19 @@ class AssistantService:
         ]
         context = [*context, AssistantInput("user", content)]
 
-        try:
-            answer = self.provider.generate(context)
-        except ProviderError:
-            self.db.rollback()
-            raise
+        safety = evaluate_message(content)
+        if safety.blocked:
+            answer = safety.response or "Please seek appropriate medical care."
+        else:
+            try:
+                answer = self.provider.generate(context)
+            except ProviderError:
+                self.db.rollback()
+                raise
 
         assistant_message = Message(
-            conversation_id=conversation.id,
-            role="assistant",
-            content=answer,
-        )
         self.db.add(assistant_message)
+        conversation.updated_at = assistant_message.created_at
         self.db.commit()
         self.db.refresh(assistant_message)
         return assistant_message
