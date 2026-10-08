@@ -2,10 +2,12 @@ from collections.abc import Callable
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.security import decode_access_token
 from app.db.session import SessionLocal
+from app.models.doctor import Doctor
 from app.models.user import User
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
@@ -50,3 +52,13 @@ def require_roles(*roles: str) -> Callable:
         return current_user
 
     return role_checker
+
+
+def get_current_doctor(
+    current_user: User = Depends(require_roles("doctor")),
+    db: Session = Depends(get_db),
+) -> Doctor:
+    doctor = db.scalar(select(Doctor).where(Doctor.user_id == current_user.id))
+    if doctor is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Doctor profile not linked")
+    return doctor
