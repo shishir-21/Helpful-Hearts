@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -16,6 +17,11 @@ class AppointmentCancellation(BaseModel):
 
 class AppointmentReschedule(BaseModel):
     starts_at: datetime
+
+
+class AppointmentDoctorStatusUpdate(BaseModel):
+    status: Literal["completed", "cancelled", "no_show"]
+    note: str | None = Field(default=None, max_length=1000)
 
 
 class AppointmentStatusHistoryResponse(BaseModel):
