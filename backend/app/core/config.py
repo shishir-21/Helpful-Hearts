@@ -2,6 +2,7 @@ from functools import lru_cache
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+
 class Settings(BaseSettings):
     app_name: str = "Helpful Hearts API"
     app_version: str = "0.1.0"
@@ -14,11 +15,21 @@ class Settings(BaseSettings):
     openai_model: str = "gpt-5"
     openai_max_output_tokens: int = 800
     ai_timeout_seconds: float = 30.0
+    s3_bucket: str | None = None
+    s3_region: str | None = None
+    s3_endpoint_url: str | None = None
+    s3_access_key_id: str | None = None
+    s3_secret_access_key: str | None = None
+    s3_presigned_url_expire_seconds: int = 900
+    medical_record_max_bytes: int = 10 * 1024 * 1024
+    medical_record_allowed_mime_types: set[str] = {"application/pdf", "image/jpeg", "image/png", "image/webp"}
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+
 
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
+
 
 settings = get_settings()
