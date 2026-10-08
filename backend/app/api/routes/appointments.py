@@ -80,6 +80,12 @@ def _record_history(
     )
 
 
+def _utc(value: datetime) -> datetime:
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
+
+
 def _same_idempotent_request(
     appointment: Appointment,
     current_user: User,
@@ -90,7 +96,7 @@ def _same_idempotent_request(
     return (
         appointment.patient_id == current_user.id
         and appointment.doctor_id == doctor_id
-        and appointment.starts_at == starts_at
+        and _utc(appointment.starts_at) == starts_at
         and appointment.reason == reason
     )
 
@@ -103,6 +109,10 @@ def create_appointment(
     db: Session = Depends(get_db),
     idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
 ) -> Appointment:
+    if payload.starts_at.tzinfo is None:
+        raise HTTPException(status_code=400, detail="starts_at must include a timezone")
+    starts_at = payload.starts_at.astimezone(timezone.utc)
+
     if idempotency_key is not None:
         idempotency_key = idempotency_key.strip()
         if not idempotency_key:
@@ -115,9 +125,7 @@ def create_appointment(
         )
         if existing is not None:
             if not _same_idempotent_request(
-                existing, current_user, payload.doctor_id, payload.starts_at.astimezone(timezone.utc)
-                if payload.starts_at.tzinfo
-                else payload.starts_at, payload.reason
+                existing, current_user, payload.doctor_id, starts_at, payload.reason
             ):
                 raise HTTPException(
                     status_code=409,
@@ -126,9 +134,6 @@ def create_appointment(
             response.status_code = status.HTTP_200_OK
             return existing
 
-    if payload.starts_at.tzinfo is None:
-        raise HTTPException(status_code=400, detail="starts_at must include a timezone")
-    starts_at = payload.starts_at.astimezone(timezone.utc)
     doctor = db.get(Doctor, payload.doctor_id)
     if doctor is None or doctor.profile_status != "verified":
         raise HTTPException(status_code=404, detail="Doctor not found")
@@ -168,7 +173,9 @@ def create_appointment(
                 select(Appointment).where(Appointment.idempotency_key == idempotency_key)
             )
             if existing is not None:
-                if not _same_idempotent_request(existing, current_user, payload.doctor_id, starts_at, payload.reason):
+                if not _same_idempotent_request(
+                    existing, current_user, payload.doctor_id, starts_at, payload.reason
+                ):
                     raise HTTPException(
                         status_code=409,
                         detail="Idempotency-Key was already used for a different booking request",
