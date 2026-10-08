@@ -55,7 +55,6 @@ def test_book_available_slot_and_block_duplicate(client):
     db.add_all([patient, doctor])
     db.commit()
 
-    # Find the next Monday more than a day in the future at 10:00 Asia/Kolkata.
     import datetime as dt
     today = dt.date.today()
     monday = today + dt.timedelta(days=(7 - today.weekday()) % 7 or 7)
@@ -90,6 +89,99 @@ def test_book_available_slot_and_block_duplicate(client):
         json={"doctor_id": str(doctor.id), "starts_at": slot.isoformat()},
     )
     assert second.status_code == 409
+
+
+def test_idempotency_key_returns_same_appointment(client):
+    patient = User(id=uuid4(), email=f"{uuid4()}@example.com", full_name="Idempotent Patient", password_hash="unused")
+    doctor = Doctor(
+        id=uuid4(),
+        full_name="Dr. Idempotency Example",
+        specialty="General Medicine",
+        profile_status="verified",
+        is_demo=True,
+        source_name="Fictional test data",
+    )
+    db = next(app.dependency_overrides[get_db]())
+    db.add_all([patient, doctor])
+    db.add(
+        DoctorAvailability(
+            doctor_id=doctor.id,
+            weekday=(date.today() + timedelta(days=1)).weekday(),
+            start_time=time(9, 0),
+            end_time=time(12, 0),
+            slot_minutes=30,
+            timezone="Asia/Kolkata",
+            is_active=True,
+        )
+    )
+    db.commit()
+    db.close()
+    app.dependency_overrides[get_current_user] = lambda: patient
+
+    future_day = date.today() + timedelta(days=1)
+    weekday = future_day.weekday()
+    # Move to the next configured weekday if tomorrow is not Monday.
+    days_until_monday = (7 - date.today().weekday()) % 7 or 7
+    booking_day = date.today() + timedelta(days=days_until_monday)
+    slot = datetime.combine(booking_day, time(10, 0), tzinfo=timezone.utc)
+    # Configure a Monday slot in the doctor's local timezone.
+    slot = datetime.combine(booking_day, time(10, 0), tzinfo=timezone.utc)
+
+    payload = {"doctor_id": str(doctor.id), "starts_at": slot.isoformat(), "reason": "Routine consultation"}
+    headers = {"Idempotency-Key": "booking-retry-001"}
+    first = client.post("/api/v1/appointments", json=payload, headers=headers)
+    assert first.status_code == 201
+    second = client.post("/api/v1/appointments", json=payload, headers=headers)
+    assert second.status_code == 200
+    assert second.json()["id"] == first.json()["id"]
+    assert second.json()["booking_reference"] == first.json()["booking_reference"]
+
+
+def test_idempotency_key_cannot_be_reused_for_different_request(client):
+    patient = User(id=uuid4(), email=f"{uuid4()}@example.com", full_name="Idempotency Conflict", password_hash="unused")
+    doctor = Doctor(
+        id=uuid4(),
+        full_name="Dr. Idempotency Conflict",
+        specialty="General Medicine",
+        profile_status="verified",
+        is_demo=True,
+        source_name="Fictional test data",
+    )
+    db = next(app.dependency_overrides[get_db]())
+    db.add_all([patient, doctor])
+    db.add(
+        DoctorAvailability(
+            doctor_id=doctor.id,
+            weekday=(date.today() + timedelta(days=7)).weekday(),
+            start_time=time(9, 0),
+            end_time=time(12, 0),
+            slot_minutes=30,
+            timezone="UTC",
+            is_active=True,
+        )
+    )
+    db.commit()
+    db.close()
+    app.dependency_overrides[get_current_user] = lambda: patient
+
+    booking_day = date.today() + timedelta(days=7)
+    first_slot = datetime.combine(booking_day, time(9, 0), tzinfo=timezone.utc)
+    second_slot = datetime.combine(booking_day, time(9, 30), tzinfo=timezone.utc)
+    headers = {"Idempotency-Key": "booking-conflict-001"}
+    first = client.post(
+        "/api/v1/appointments",
+        json={"doctor_id": str(doctor.id), "starts_at": first_slot.isoformat()},
+        headers=headers,
+    )
+    assert first.status_code == 201
+
+    second = client.post(
+        "/api/v1/appointments",
+        json={"doctor_id": str(doctor.id), "starts_at": second_slot.isoformat()},
+        headers=headers,
+    )
+    assert second.status_code == 409
+    assert "different booking request" in second.json()["detail"]
 
 
 def test_booking_rejects_outside_schedule(client):
@@ -243,8 +335,6 @@ def test_patient_can_reschedule_before_12_hour_cutoff(client):
     )
     assert response.status_code == 200
     returned_start = datetime.fromisoformat(response.json()["starts_at"].replace("Z", "+00:00"))
-    # SQLite drops timezone metadata for DateTime(timezone=True); the API value
-    # is still stored as UTC, so restore UTC before comparing instants.
     if returned_start.tzinfo is None:
         returned_start = returned_start.replace(tzinfo=timezone.utc)
     assert returned_start.astimezone(timezone.utc) == new_start.astimezone(timezone.utc)
