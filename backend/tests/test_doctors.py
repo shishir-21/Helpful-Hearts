@@ -173,6 +173,23 @@ def test_admin_can_link_doctor_profile_to_doctor_user(client):
     assert response.status_code == 200
     assert response.json()["user_id"] == str(doctor_user.id)
 
+    duplicate_doctor = client.post(
+        "/api/v1/admin/doctors",
+        json={
+            "full_name": "Dr. Duplicate Link",
+            "specialty": "Dermatology",
+            "is_demo": True,
+            "source_name": "Fictional test data",
+        },
+    )
+    assert duplicate_doctor.status_code == 201
+
+    duplicate_response = client.patch(
+        f"/api/v1/admin/doctors/{duplicate_doctor.json()['id']}/user-link",
+        json={"user_id": str(doctor_user.id)},
+    )
+    assert duplicate_response.status_code == 409
+
 
 def test_admin_cannot_link_non_doctor_user(client):
     app.dependency_overrides[get_current_user] = lambda: _user("admin")
