@@ -50,7 +50,6 @@ def list_messages(
     current_user: User = Depends(patient_only),
     db: Session = Depends(get_db),
 ):
-    assistant_rate_limiter.check(current_user.id)
     service = AssistantService(db)
     conversation = service.get_conversation(current_user, conversation_id)
     if conversation is None:
@@ -68,6 +67,7 @@ def send_message(
     current_user: User = Depends(patient_only),
     db: Session = Depends(get_db),
 ) -> MessageResponse:
+    assistant_rate_limiter.check(current_user.id)
     service = AssistantService(db)
     conversation = service.get_conversation(current_user, conversation_id)
     if conversation is None:
