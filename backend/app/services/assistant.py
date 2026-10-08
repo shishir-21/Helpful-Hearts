@@ -74,8 +74,11 @@ class AssistantService:
                 raise
 
         assistant_message = Message(
+            conversation_id=conversation.id,
+            role="assistant",
+            content=answer,
+        )
         self.db.add(assistant_message)
-        conversation.updated_at = assistant_message.created_at
         self.db.commit()
         self.db.refresh(assistant_message)
         return assistant_message
