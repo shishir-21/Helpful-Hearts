@@ -35,6 +35,7 @@ def client():
 
     app.dependency_overrides[get_db] = override_get_db
     with TestClient(app) as test_client:
+        test_client.testing_session = testing_session
         yield test_client
     app.dependency_overrides.clear()
     Base.metadata.drop_all(bind=engine)
@@ -353,3 +354,150 @@ def test_patient_can_reschedule_before_12_hour_cutoff(client):
     history = client.get(f"/api/v1/appointments/{appointment_id}/history")
     assert history.status_code == 200
     assert history.json()[0]["event"] == "rescheduled"
+
+
+def _create_doctor_appointment(client, starts_at: datetime):
+    doctor_user = User(
+        id=uuid4(),
+        email=f"doctor-{uuid4()}@example.com",
+        full_name="Doctor Account",
+        password_hash="unused",
+        role="doctor",
+    )
+    patient = User(
+        id=uuid4(),
+        email=f"patient-{uuid4()}@example.com",
+        full_name="Appointment Patient",
+        password_hash="unused",
+        role="patient",
+    )
+    doctor = Doctor(
+        id=uuid4(),
+        user_id=doctor_user.id,
+        full_name="Dr. Managed Appointments",
+        specialty="Cardiology",
+        profile_status="verified",
+        is_demo=False,
+        source_name="Fictional test data",
+    )
+    appointment = Appointment(
+        id=uuid4(),
+        doctor_id=doctor.id,
+        patient_id=patient.id,
+        starts_at=starts_at,
+        ends_at=starts_at + timedelta(minutes=30),
+        status="confirmed",
+        booking_reference=f"HH-{uuid4().hex[:12].upper()}",
+    )
+    db = client.testing_session()
+    db.add_all([doctor_user, patient, doctor, appointment])
+    db.commit()
+    appointment_id = appointment.id
+    db.close()
+    app.dependency_overrides[get_current_user] = lambda: doctor_user
+    return doctor_user, patient, doctor, appointment_id
+
+
+def test_doctor_only_sees_own_appointments(client):
+    _, patient, doctor, own_id = _create_doctor_appointment(
+        client, datetime.now(timezone.utc) + timedelta(days=2)
+    )
+    other_doctor_user = User(
+        id=uuid4(),
+        email=f"doctor-{uuid4()}@example.com",
+        full_name="Other Doctor",
+        password_hash="unused",
+        role="doctor",
+    )
+    other_doctor = Doctor(
+        id=uuid4(),
+        user_id=other_doctor_user.id,
+        full_name="Dr. Other",
+        specialty="Neurology",
+        profile_status="verified",
+        is_demo=False,
+        source_name="Fictional test data",
+    )
+    other_appointment = Appointment(
+        id=uuid4(),
+        doctor_id=other_doctor.id,
+        patient_id=patient.id,
+        starts_at=datetime.now(timezone.utc) + timedelta(days=3),
+        ends_at=datetime.now(timezone.utc) + timedelta(days=3, minutes=30),
+        status="confirmed",
+        booking_reference=f"HH-{uuid4().hex[:12].upper()}",
+    )
+    db = client.testing_session()
+    db.add_all([other_doctor_user, other_doctor, other_appointment])
+    db.commit()
+    other_id = other_appointment.id
+    db.close()
+
+    response = client.get("/api/v1/appointments/doctor")
+    assert response.status_code == 200
+    assert [item["id"] for item in response.json()] == [str(own_id)]
+    assert client.get(f"/api/v1/appointments/doctor/{own_id}").status_code == 200
+    assert client.get(f"/api/v1/appointments/doctor/{other_id}").status_code == 404
+    assert doctor.id != other_doctor.id
+
+
+def test_patient_cannot_access_doctor_appointment_management(client):
+    patient = User(
+        id=uuid4(),
+        email=f"{uuid4()}@example.com",
+        full_name="Patient",
+        password_hash="unused",
+        role="patient",
+    )
+    db = client.testing_session()
+    db.add(patient)
+    db.commit()
+    db.close()
+    app.dependency_overrides[get_current_user] = lambda: patient
+
+    response = client.get("/api/v1/appointments/doctor")
+    assert response.status_code == 403
+
+
+def test_doctor_can_cancel_appointment_and_history_records_doctor(client):
+    doctor_user, _, _, appointment_id = _create_doctor_appointment(
+        client, datetime.now(timezone.utc) + timedelta(hours=6)
+    )
+
+    response = client.patch(
+        f"/api/v1/appointments/doctor/{appointment_id}/status",
+        json={"status": "cancelled", "note": "Doctor unavailable"},
+    )
+    assert response.status_code == 200
+    assert response.json()["status"] == "cancelled"
+
+    history = client.get(f"/api/v1/appointments/doctor/{appointment_id}/history")
+    assert history.status_code == 200
+    assert history.json()[0]["event"] == "cancelled"
+    assert history.json()[0]["changed_by_user_id"] == str(doctor_user.id)
+
+
+def test_doctor_cannot_complete_future_appointment(client):
+    _, _, _, appointment_id = _create_doctor_appointment(
+        client, datetime.now(timezone.utc) + timedelta(hours=2)
+    )
+
+    response = client.patch(
+        f"/api/v1/appointments/doctor/{appointment_id}/status",
+        json={"status": "completed"},
+    )
+    assert response.status_code == 409
+    assert "after their start time" in response.json()["detail"]
+
+
+def test_doctor_can_complete_started_appointment(client):
+    _, _, _, appointment_id = _create_doctor_appointment(
+        client, datetime.now(timezone.utc) - timedelta(minutes=15)
+    )
+
+    response = client.patch(
+        f"/api/v1/appointments/doctor/{appointment_id}/status",
+        json={"status": "completed", "note": "Consultation completed"},
+    )
+    assert response.status_code == 200
+    assert response.json()["status"] == "completed"

@@ -3,12 +3,12 @@ from secrets import token_hex
 from uuid import UUID
 from zoneinfo import ZoneInfo
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Response, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Response, status
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user, get_db
+from app.api.deps import get_current_doctor, get_current_user, get_db
 from app.models.appointment import Appointment
 from app.models.appointment_status_history import AppointmentStatusHistory
 from app.models.doctor import Doctor
@@ -17,6 +17,7 @@ from app.models.user import User
 from app.schemas.appointments import (
     AppointmentCancellation,
     AppointmentCreate,
+    AppointmentDoctorStatusUpdate,
     AppointmentReschedule,
     AppointmentResponse,
     AppointmentStatusHistoryResponse,
@@ -67,11 +68,12 @@ def _record_history(
     new_status: str,
     event: str,
     note: str | None = None,
+    changed_by_user_id: UUID | None = None,
 ) -> None:
     db.add(
         AppointmentStatusHistory(
             appointment_id=appointment.id,
-            changed_by_user_id=appointment.patient_id,
+            changed_by_user_id=changed_by_user_id or appointment.patient_id,
             previous_status=previous_status,
             new_status=new_status,
             event=event,
@@ -183,6 +185,89 @@ def create_appointment(
                 response.status_code = status.HTTP_200_OK
                 return existing
         raise HTTPException(status_code=409, detail="This slot has already been booked") from exc
+    db.refresh(appointment)
+    return appointment
+
+
+
+
+def _get_doctor_appointment(appointment_id: UUID, doctor: Doctor, db: Session) -> Appointment:
+    appointment = db.get(Appointment, appointment_id)
+    if appointment is None or appointment.doctor_id != doctor.id:
+        raise HTTPException(status_code=404, detail="Appointment not found")
+    return appointment
+
+
+@router.get("/doctor", response_model=list[AppointmentResponse])
+def list_doctor_appointments(
+    current_doctor: Doctor = Depends(get_current_doctor),
+    appointment_status: str | None = Query(default=None, alias="status"),
+    db: Session = Depends(get_db),
+) -> list[Appointment]:
+    query = select(Appointment).where(Appointment.doctor_id == current_doctor.id)
+    if appointment_status is not None:
+        if appointment_status not in {"confirmed", "pending", "completed", "cancelled", "no_show"}:
+            raise HTTPException(status_code=400, detail="Invalid appointment status")
+        query = query.where(Appointment.status == appointment_status)
+    return list(db.scalars(query.order_by(Appointment.starts_at.asc())).all())
+
+
+@router.get("/doctor/{appointment_id}", response_model=AppointmentResponse)
+def get_doctor_appointment(
+    appointment_id: UUID,
+    current_doctor: Doctor = Depends(get_current_doctor),
+    db: Session = Depends(get_db),
+) -> Appointment:
+    return _get_doctor_appointment(appointment_id, current_doctor, db)
+
+
+@router.get("/doctor/{appointment_id}/history", response_model=list[AppointmentStatusHistoryResponse])
+def get_doctor_appointment_history(
+    appointment_id: UUID,
+    current_doctor: Doctor = Depends(get_current_doctor),
+    db: Session = Depends(get_db),
+) -> list[AppointmentStatusHistory]:
+    _get_doctor_appointment(appointment_id, current_doctor, db)
+    return list(
+        db.scalars(
+            select(AppointmentStatusHistory)
+            .where(AppointmentStatusHistory.appointment_id == appointment_id)
+            .order_by(AppointmentStatusHistory.created_at.asc())
+        ).all()
+    )
+
+
+@router.patch("/doctor/{appointment_id}/status", response_model=AppointmentResponse)
+def update_doctor_appointment_status(
+    appointment_id: UUID,
+    payload: AppointmentDoctorStatusUpdate,
+    current_doctor: Doctor = Depends(get_current_doctor),
+    db: Session = Depends(get_db),
+) -> Appointment:
+    appointment = _get_doctor_appointment(appointment_id, current_doctor, db)
+    if appointment.status not in ACTIVE_STATUSES:
+        raise HTTPException(status_code=409, detail="Only active appointments can be updated")
+
+    now = datetime.now(timezone.utc)
+    starts_at = _utc(appointment.starts_at)
+    if payload.status in {"completed", "no_show"} and starts_at > now:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Appointments can only be marked {payload.status} after their start time",
+        )
+
+    previous = appointment.status
+    appointment.status = payload.status
+    _record_history(
+        db,
+        appointment,
+        previous,
+        payload.status,
+        payload.status,
+        payload.note,
+        changed_by_user_id=current_doctor.user_id,
+    )
+    db.commit()
     db.refresh(appointment)
     return appointment
 
