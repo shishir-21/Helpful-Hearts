@@ -3,7 +3,7 @@ from secrets import token_hex
 from uuid import UUID
 from zoneinfo import ZoneInfo
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Response, status
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -80,15 +80,60 @@ def _record_history(
     )
 
 
+def _utc(value: datetime) -> datetime:
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
+
+
+def _same_idempotent_request(
+    appointment: Appointment,
+    current_user: User,
+    doctor_id: UUID,
+    starts_at: datetime,
+    reason: str | None,
+) -> bool:
+    return (
+        appointment.patient_id == current_user.id
+        and appointment.doctor_id == doctor_id
+        and _utc(appointment.starts_at) == starts_at
+        and appointment.reason == reason
+    )
+
+
 @router.post("", response_model=AppointmentResponse, status_code=status.HTTP_201_CREATED)
 def create_appointment(
     payload: AppointmentCreate,
+    response: Response,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
+    idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
 ) -> Appointment:
     if payload.starts_at.tzinfo is None:
         raise HTTPException(status_code=400, detail="starts_at must include a timezone")
     starts_at = payload.starts_at.astimezone(timezone.utc)
+
+    if idempotency_key is not None:
+        idempotency_key = idempotency_key.strip()
+        if not idempotency_key:
+            raise HTTPException(status_code=400, detail="Idempotency-Key cannot be empty")
+        if len(idempotency_key) > 128:
+            raise HTTPException(status_code=400, detail="Idempotency-Key is too long")
+
+        existing = db.scalar(
+            select(Appointment).where(Appointment.idempotency_key == idempotency_key)
+        )
+        if existing is not None:
+            if not _same_idempotent_request(
+                existing, current_user, payload.doctor_id, starts_at, payload.reason
+            ):
+                raise HTTPException(
+                    status_code=409,
+                    detail="Idempotency-Key was already used for a different booking request",
+                )
+            response.status_code = status.HTTP_200_OK
+            return existing
+
     doctor = db.get(Doctor, payload.doctor_id)
     if doctor is None or doctor.profile_status != "verified":
         raise HTTPException(status_code=404, detail="Doctor not found")
@@ -105,6 +150,7 @@ def create_appointment(
     )
     if overlap is not None:
         raise HTTPException(status_code=409, detail="This slot has already been booked")
+
     appointment = Appointment(
         doctor_id=doctor.id,
         patient_id=current_user.id,
@@ -113,6 +159,7 @@ def create_appointment(
         status="confirmed",
         reason=payload.reason,
         booking_reference=f"HH-{token_hex(6).upper()}",
+        idempotency_key=idempotency_key,
     )
     db.add(appointment)
     try:
@@ -121,6 +168,20 @@ def create_appointment(
         db.commit()
     except IntegrityError as exc:
         db.rollback()
+        if idempotency_key is not None:
+            existing = db.scalar(
+                select(Appointment).where(Appointment.idempotency_key == idempotency_key)
+            )
+            if existing is not None:
+                if not _same_idempotent_request(
+                    existing, current_user, payload.doctor_id, starts_at, payload.reason
+                ):
+                    raise HTTPException(
+                        status_code=409,
+                        detail="Idempotency-Key was already used for a different booking request",
+                    ) from exc
+                response.status_code = status.HTTP_200_OK
+                return existing
         raise HTTPException(status_code=409, detail="This slot has already been booked") from exc
     db.refresh(appointment)
     return appointment
